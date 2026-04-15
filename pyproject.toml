@@ -1,0 +1,56 @@
+[project]
+name = "demand-manager"
+version = "0.1.0"
+description = "Sistema de gestão de demandas estilo Trello"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.115.0",       # inclui uvicorn, multipart, email-validator
+    "sqlalchemy[asyncio]>=2.0.0",
+    "alembic>=1.13.0",
+    "asyncpg>=0.30.0",
+    "pydantic-settings>=2.0.0",
+    "python-jose[cryptography]>=3.3.0", # [cryptography] = suporte RSA + algoritmos fortes
+    "bcrypt>=4.2.0",                     # direto, sem passlib (passlib abandonada)
+    "python-multipart>=0.0.12",          # required para OAuth2PasswordRequestForm
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9.0",          # linter + formatter (substitui flake8, isort, pyupgrade)
+    "black>=25.0.0",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "httpx>=0.28.0",        # AsyncClient para testes
+    "pytest-cov>=6.0.0",
+    "factory-boy>=3.3.0",   # fixtures de testes
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP"]
+ignore = ["B008"]  # FastAPI usa Depends() como default arg
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["*/migrations/*", "*/tests/*"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.hatch.build.targets.sdist]
+include = ["app"]
