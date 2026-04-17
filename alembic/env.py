@@ -7,9 +7,7 @@ from alembic import context
 
 # ─── Importar TODOS os models aqui para autogenerate funcionar ───────────────
 from app.database.base import Base  # noqa: F401
-# À medida que criar modelos, importe-os abaixo:
-# from app.domains.users.models import User  # noqa: F401
-# from app.domains.boards.models import Board  # noqa: F401
+from app.domain.users.models import User
 
 from app.config import settings
 

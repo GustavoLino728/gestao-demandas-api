@@ -1,41 +1,37 @@
-from datetime import datetime
+import uuid
 from enum import StrEnum
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Boolean, String
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
-from app.database.base import Base
+from app.database.base import Base, TimestampMixin
 
 
-class AuditAction(StrEnum):
-    CREATE = "CREATE"
-    UPDATE = "UPDATE"
-    DELETE = "DELETE"
+class UserRole(StrEnum):
+    ADMIN = "admin"
+    SUPERVISOR = "supervisor"
+    INTERN = "intern"
 
 
-class AuditLog(Base):
-    """
-    Histórico imutável de todas as mudanças do sistema.
-    Nunca deve ser atualizado ou deletado — apenas inserido.
-    """
+class User(Base, TimestampMixin):
+    __tablename__ = "users"
 
-    __tablename__ = "audit_logs"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    # O que mudou
-    entity_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    entity_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    action: Mapped[AuditAction] = mapped_column(String(10), nullable=False)
-
-    # Snapshot das mudanças: {"title": {"old": "Fix bug", "new": "Fix critical bug"}}
-    changes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-
-    # Quem fez
-    user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
-    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)  # suporta IPv6
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[UserRole] = mapped_column(String(20), default=UserRole.INTERN, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    registration: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    sector: Mapped[str] = mapped_column(String(100), nullable=False)
+    position: Mapped[str] = mapped_column(String(100), nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<User id={self.id} email={self.email}>"

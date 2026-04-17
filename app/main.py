@@ -6,6 +6,7 @@ from fastapi.openapi.utils import get_openapi
 from app.config import settings
 from app.core.exceptions import AppException
 from app.core.middleware import register_middlewares, logging_middleware
+from app.domain.users.router import router as users_router
 
 logging.basicConfig(
     level=logging.DEBUG if settings.app_debug else logging.INFO,
@@ -46,6 +47,9 @@ def create_app() -> FastAPI:
 
     register_middlewares(app)
     app.middleware("http")(logging_middleware)
+
+    app.include_router(users_router, prefix="/api/v1")
+
 
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException):

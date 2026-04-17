@@ -34,7 +34,7 @@ def audit_before_flush(session: Session, flush_context, instances):
     Detecta objetos novos, modificados e deletados.
     """
     # Import lazy para evitar circular imports
-    from app.domains.audit.models import AuditLog, AuditAction
+    from app.domain.audit.models import AuditLog, AuditAction
 
     user_id = get_current_user_id()
     ip = get_current_ip()
