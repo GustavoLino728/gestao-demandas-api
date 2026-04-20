@@ -1,0 +1,36 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Alembic (não copiar versions geradas localmente se quiser controle)
+# alembic/versions/  ← deixe comentado, você quer que as migrations vão junto
+
+# Dev/IDE
+.env
+.env.*
+.git/
+.gitignore
+.vscode/
+.idea/
+*.iml
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# OS
+.DS_Store
+Thumbs.db

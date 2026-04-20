@@ -6,6 +6,9 @@ from fastapi.openapi.utils import get_openapi
 from app.config import settings
 from app.core.exceptions import AppException
 from app.core.middleware import register_middlewares, logging_middleware
+from app.domain.users.router import router as users_router
+from app.domain.auth.router import router as auth_router
+
 
 logging.basicConfig(
     level=logging.DEBUG if settings.app_debug else logging.INFO,
@@ -35,6 +38,9 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Gestão de Demandas - API",
         version="1.0.0",
+        swagger_ui_parameters={
+            "persistAuthorization": True,
+        },
         debug=settings.app_debug,
         lifespan=lifespan,
         openapi_tags=TAGS_METADATA,
@@ -42,14 +48,22 @@ def create_app() -> FastAPI:
         docs_url="/docs" if not settings.is_production else None,
         redoc_url="/redoc" if not settings.is_production else None,
         openapi_url="/openapi.json" if not settings.is_production else None,
+        swagger_ui_oauth2_redirect_url="/oauth2-redirect",
     )
 
     register_middlewares(app)
     app.middleware("http")(logging_middleware)
 
+    app.include_router(users_router, prefix="/api/v1")
+    app.include_router(auth_router, prefix="/api/v1")
+
+
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException):
-        return JSONResponse(status_code=exc.code, content={"detail": exc.message})
+        return JSONResponse(
+            status_code=exc.code,
+            content={"detail": exc.message},
+        )
 
     @app.get("/health", tags=["Health"])
     async def health_check():
@@ -57,42 +71,4 @@ def create_app() -> FastAPI:
 
     return app
 
-
-def custom_openapi(app: FastAPI):
-    """Configura o schema OpenAPI com suporte a Bearer JWT no Swagger UI."""
-    if app.openapi_schema:
-        return app.openapi_schema
-
-    schema = get_openapi(
-        title=app.title,
-        version=app.version,
-        description=(
-            "## Gestão de Demandas - API\n\n"
-            "Sistema de gestão de demandas no estilo Trello.\n\n"
-            "### Autenticação\n"
-            "Use o endpoint `/api/v1/auth/login` para obter o token JWT. "
-            "Clique em **Authorize** e cole o token no campo `Bearer`."
-        ),
-        routes=app.routes,
-        tags=TAGS_METADATA,
-    )
-
-    schema.setdefault("components", {})
-
-    # Adiciona o esquema de segurança Bearer JWT
-    schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT",
-        }
-    }
-    # Aplica autenticação globalmente em todos os endpoints
-    schema["security"] = [{"BearerAuth": []}]
-
-    app.openapi_schema = schema
-    return app.openapi_schema
-
-
 app = create_app()
-app.openapi = lambda: custom_openapi(app)
