@@ -12,7 +12,7 @@ class UserCreate(BaseModel):
     sector: str = Field(..., min_length=2, max_length=100)
     position: str = Field(..., min_length=2, max_length=100)
     phone: str | None = Field(None, max_length=20)
-    role: UserRole = UserRole.INTERN
+    role: UserRole = UserRole.SERVIDOR
 
     @field_validator("password")
     @classmethod

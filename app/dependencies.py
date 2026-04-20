@@ -9,61 +9,44 @@ from app.core.exceptions import credentials_exception, ForbiddenError
 from app.core.security import decode_token
 from app.domain.users.models import UserRole
 
-http_bearer = HTTPBearer(auto_error=True)
 
+http_bearer = HTTPBearer(auto_error=True)
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 
 
-async def get_current_user_id(
+async def _extract_payload(
     credentials: HTTPAuthorizationCredentials = Security(http_bearer),
-) -> uuid.UUID:
+) -> dict:
     try:
-        token = credentials.credentials
-        payload = decode_token(token)
+        payload = decode_token(credentials.credentials)
         if payload.get("type") != "access":
             raise credentials_exception
-        sub = payload.get("sub")
-        if not sub:
+        if not payload.get("sub"):
             raise credentials_exception
-        return uuid.UUID(sub)
-    except (JWTError, ValueError) as e:
-        logger.error(f"ERRO AO DECODIFICAR: {type(e).__name__}: {e}")
-        raise credentials_exception
-
-
-async def get_current_user_role(
-    credentials: HTTPAuthorizationCredentials = Security(http_bearer),
-) -> tuple[uuid.UUID, str]:
-    try:
-        token = credentials.credentials
-        payload = decode_token(token)
-        if payload.get("type") != "access":
-            raise credentials_exception
-        sub = payload.get("sub")
-        role = payload.get("role", "")
-        if not sub:
-            raise credentials_exception
-        return uuid.UUID(sub), role
+        return payload
     except (JWTError, ValueError):
         raise credentials_exception
 
 
-def require_role(*roles: UserRole):
-    async def _check(
-        credentials: HTTPAuthorizationCredentials = Security(http_bearer),
+async def get_current_user_id(
+    payload: Annotated[dict, Depends(_extract_payload)],
+) -> uuid.UUID:
+    return uuid.UUID(payload["sub"])
+
+
+def require_roles(*allowed: UserRole):
+    async def _guard(
+        payload: Annotated[dict, Depends(_extract_payload)],
     ) -> uuid.UUID:
-        try:
-            token = credentials.credentials
-            payload = decode_token(token)
-            sub = payload.get("sub")
-            role = payload.get("role", "")
-            if not sub or role not in [r.value for r in roles]:
-                raise ForbiddenError()
-            return uuid.UUID(sub)
-        except (JWTError, ValueError):
-            raise credentials_exception
-    return _check
+        role = payload.get("role", "")
+        if role not in [r.value for r in allowed]:
+            raise ForbiddenError(
+                f"Acesso restrito. Perfis permitidos: {[r.value for r in allowed]}"
+            )
+        return uuid.UUID(payload["sub"])
+    return _guard
 
-
-CurrentUserID = Annotated[uuid.UUID, Depends(get_current_user_id)]
-AdminOnly = Annotated[uuid.UUID, Depends(require_role(UserRole.ADMIN))]
+CurrentUserID  = Annotated[uuid.UUID, Depends(get_current_user_id)]
+AnyUser        = CurrentUserID
+AdminOnly      = Annotated[uuid.UUID, Depends(require_roles(UserRole.ADMIN))]
+GestorOrAbove  = Annotated[uuid.UUID, Depends(require_roles(UserRole.ADMIN, UserRole.GESTOR))]

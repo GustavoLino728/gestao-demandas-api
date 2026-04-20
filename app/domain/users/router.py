@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.dependencies import DBSession, CurrentUserID
+from app.dependencies import DBSession, AdminOnly, GestorOrAbove, AnyUser
 from .service import UserService
 from .repository import UserRepository
 from .schemas import UserCreate, UserUpdate, UserAdminUpdate, UserResponse
@@ -32,7 +32,7 @@ async def create_user(
     summary="Dados do usuário autenticado",
 )
 async def get_me(
-    current_user_id: CurrentUserID,
+    current_user_id: AnyUser,
     service: UserService = Depends(get_user_service),
 ):
     return await service.get_user_or_404(current_user_id)
@@ -45,7 +45,7 @@ async def get_me(
 )
 async def update_me(
     data: UserUpdate,
-    current_user_id: CurrentUserID,
+    current_user_id: AnyUser,
     service: UserService = Depends(get_user_service),
 ):
     return await service.update_me(current_user_id, data)
@@ -59,7 +59,7 @@ async def update_me(
 async def list_users(
     limit: int = 20,
     offset: int = 0,
-    current_user_id: CurrentUserID = None,
+    current_user_id: AnyUser = None,
     service: UserService = Depends(get_user_service),
 ):
     return await service.list_users(limit=limit, offset=offset)
@@ -72,7 +72,7 @@ async def list_users(
 )
 async def get_user(
     user_id: int,
-    current_user_id: CurrentUserID,
+    current_user_id: AnyUser,
     service: UserService = Depends(get_user_service),
 ):
     return await service.get_user_or_404(user_id)
@@ -86,7 +86,7 @@ async def get_user(
 async def admin_update_user(
     user_id: int,
     data: UserAdminUpdate,
-    current_user_id: CurrentUserID,
+    current_user_id: AnyUser,
     service: UserService = Depends(get_user_service),
     db: DBSession = None,
 ):
@@ -101,7 +101,7 @@ async def admin_update_user(
 )
 async def deactivate_user(
     user_id: int,
-    current_user_id: CurrentUserID,
+    current_user_id: AnyUser,
     service: UserService = Depends(get_user_service),
 ):
     requester = await service.get_user_or_404(current_user_id)

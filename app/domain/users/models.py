@@ -8,8 +8,8 @@ from app.database.base import Base, TimestampMixin
 
 class UserRole(StrEnum):
     ADMIN = "admin"
-    SUPERVISOR = "supervisor"
-    INTERN = "intern"
+    GESTOR = "gestor"
+    SERVIDOR = "servidor"
 
 
 class User(Base, TimestampMixin):
@@ -23,7 +23,7 @@ class User(Base, TimestampMixin):
 
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[UserRole] = mapped_column(String(20), default=UserRole.INTERN, nullable=False)
+    role: Mapped[UserRole] = mapped_column(String(20), default=UserRole.SERVIDOR, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 

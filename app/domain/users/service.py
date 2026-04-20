@@ -42,20 +42,16 @@ class UserService:
         return user
 
     async def admin_update(
-        self, target_id: int, data: UserAdminUpdate, requester_role: UserRole
+        self, target_id: int, data: UserAdminUpdate
     ) -> User:
-        if requester_role != UserRole.ADMIN:
-            raise ForbiddenError("Apenas administradores podem alterar role e status")
-
+        
         user = await self.get_user_or_404(target_id)
         for field, value in data.model_dump(exclude_none=True).items():
             setattr(user, field, value)
         await self.repo.session.flush()
         return user
 
-    async def deactivate(self, target_id: int, requester_role: UserRole) -> User:
-        if requester_role != UserRole.ADMIN:
-            raise ForbiddenError("Apenas administradores podem desativar usuários")
+    async def deactivate(self, target_id: int) -> User:
         user = await self.get_user_or_404(target_id)
         user.is_active = False
         await self.repo.session.flush()
