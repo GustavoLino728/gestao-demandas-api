@@ -1,41 +1,67 @@
-from datetime import datetime
+import uuid
 from enum import StrEnum
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
-from app.database.base import Base
+from sqlalchemy import ForeignKey, String, Text, Integer, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.database.base import Base, TimestampMixin
 
 
-class AuditAction(StrEnum):
-    CREATE = "CREATE"
-    UPDATE = "UPDATE"
-    DELETE = "DELETE"
+class CardPriority(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    URGENT = "urgent"
 
 
-class AuditLog(Base):
-    """
-    Histórico imutável de todas as mudanças do sistema.
-    Nunca deve ser atualizado ou deletado — apenas inserido.
-    """
+class Card(Base, TimestampMixin):
+    __tablename__ = "cards"
 
-    __tablename__ = "audit_logs"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    # O que mudou
-    entity_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    entity_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    action: Mapped[AuditAction] = mapped_column(String(10), nullable=False)
-
-    # Snapshot das mudanças: {"title": {"old": "Fix bug", "new": "Fix critical bug"}}
-    changes: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-
-    # Quem fez
-    user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
     )
-    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)  # suporta IPv6
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    priority: Mapped[CardPriority] = mapped_column(
+        default=CardPriority.MEDIUM, nullable=False
     )
+    due_date: Mapped[str | None] = mapped_column(DateTime(timezone=True))
+
+    list_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("lists.id", ondelete="CASCADE"), nullable=False
+    )
+    assignee_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+
+    # Relationships
+    list: Mapped["List"] = relationship(back_populates="cards")
+    assignee: Mapped["User | None"] = relationship(back_populates="assigned_cards")
+    labels: Mapped[list["Label"]] = relationship(
+        secondary="card_labels", back_populates="cards"
+    )
+    history: Mapped[list["CardHistory"]] = relationship(
+        back_populates="card", cascade="all, delete-orphan"
+    )
+
+
+class CardHistory(Base):
+    __tablename__ = "cards_history"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    card_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cards.id", ondelete="CASCADE"), nullable=False
+    )
+    changed_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    field_changed: Mapped[str] = mapped_column(String(100), nullable=False)
+    old_value: Mapped[str | None] = mapped_column(Text)
+    new_value: Mapped[str | None] = mapped_column(Text)
+    changed_at: Mapped[str] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+    card: Mapped["Card"] = relationship(back_populates="history")
+    author: Mapped["User | None"] = relationship()
