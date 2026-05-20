@@ -4,6 +4,9 @@ from app.domain.boards.repository import BoardRepository
 from app.domain.boards.schemas import BoardCreate, BoardUpdate
 from app.core.exceptions import NotFoundError, ForbiddenError
 from app.domain.users.models import UserRole
+from app.domain.lists.service import ListService
+from app.domain.lists.repository import ListRepository
+
 
 class BoardService:
     def __init__(self, repo: BoardRepository):
@@ -11,7 +14,10 @@ class BoardService:
 
     async def create_board(self, data: BoardCreate, owner_id: uuid.UUID) -> Board:
         board = Board(**data.model_dump(), owner_id=owner_id)
-        return await self.repo.create(board)
+        await self.repo.create(board)
+        list_service = ListService(ListRepository(self.repo.db))
+        await list_service.create_defaults_for_board(board.id)
+        return board
 
     async def get_board(self, board_id: uuid.UUID) -> Board:
         board = await self.repo.get_by_id_with_lists(board_id)

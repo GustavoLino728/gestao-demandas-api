@@ -61,7 +61,8 @@ class CardService:
         if not is_assignee and not is_privileged:
             raise ForbiddenError("Apenas o responsável ou gestores podem editar este card")
 
-        changes = data.model_dump(exclude_none=True)
+        changes = data.model_dump(exclude_unset=True)
+
         for field, new_value in changes.items():
             old_value = getattr(card, field)
             if old_value != new_value:

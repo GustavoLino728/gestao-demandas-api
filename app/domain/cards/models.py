@@ -3,7 +3,7 @@ from enum import StrEnum
 from sqlalchemy import ForeignKey, String, Text, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.base import Base, TimestampMixin
-
+from datetime import datetime
 
 class CardPriority(StrEnum):
     LOW = "low"
@@ -22,7 +22,7 @@ class Card(Base, TimestampMixin):
     priority: Mapped[CardPriority] = mapped_column(default=CardPriority.MEDIUM, nullable=False)
     due_date: Mapped[str | None] = mapped_column(DateTime(timezone=True))
 
-    list_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)  # FK adicionada quando List existir
+    list_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("lists.id", ondelete="CASCADE"), nullable=False)
     assignee_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
     # Relationships
@@ -30,6 +30,7 @@ class Card(Base, TimestampMixin):
     history: Mapped[list["CardHistory"]] = relationship(
         back_populates="card", cascade="all, delete-orphan"
     )
+    list: Mapped["List"] = relationship("List", back_populates="cards")
 
 
 class CardHistory(Base):
@@ -41,7 +42,7 @@ class CardHistory(Base):
     field_changed: Mapped[str] = mapped_column(String(100), nullable=False)
     old_value: Mapped[str | None] = mapped_column(Text)
     new_value: Mapped[str | None] = mapped_column(Text)
-    changed_at: Mapped[str] = mapped_column(DateTime(timezone=True), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     card: Mapped["Card"] = relationship(back_populates="history")
     author: Mapped["User | None"] = relationship()
