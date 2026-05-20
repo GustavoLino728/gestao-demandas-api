@@ -2,7 +2,7 @@ import uuid
 from enum import StrEnum
 from sqlalchemy import Boolean, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.base import Base, TimestampMixin
 
 
@@ -32,6 +32,9 @@ class User(Base, TimestampMixin):
     sector: Mapped[str] = mapped_column(String(100), nullable=False)
     position: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    boards: Mapped[list["Board"]] = relationship("Board", back_populates="owner")
+    assigned_cards: Mapped[list["Card"]] = relationship("Card", back_populates="assignee")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email}>"

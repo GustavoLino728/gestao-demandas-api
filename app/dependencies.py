@@ -33,6 +33,15 @@ async def get_current_user_id(
 ) -> uuid.UUID:
     return uuid.UUID(payload["sub"])
 
+async def get_current_user_context(
+    payload: Annotated[dict, Depends(_extract_payload)],
+) -> tuple[uuid.UUID, UserRole]:
+    """Retorna (user_id, role) sem bater no banco."""
+    return uuid.UUID(payload["sub"]), UserRole(payload.get("role", "servidor"))
+
+CurrentUserContext = Annotated[
+    tuple[uuid.UUID, UserRole], Depends(get_current_user_context)
+]
 
 def require_roles(*allowed: UserRole):
     async def _guard(
