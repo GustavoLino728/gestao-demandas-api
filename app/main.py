@@ -9,6 +9,7 @@ from app.core.middleware import register_middlewares, logging_middleware
 from app.domain.users.router import router as users_router
 from app.domain.auth.router import router as auth_router
 from app.domain.cards.router import router as cards_router
+from app.domain.boards.router import router as boards_router
 
 logging.basicConfig(
     level=logging.DEBUG if settings.app_debug else logging.INFO,
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
     app.include_router(users_router, prefix="/api/v1")
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(cards_router, prefix="/api/v1")
+    app.include_router(boards_router, prefix="/api/v1")
 
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException):

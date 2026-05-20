@@ -5,9 +5,9 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
-# ─── Importar TODOS os models aqui para autogenerate funcionar ───────────────
 from app.database.base import Base  # noqa: F401
 from app.domain.users.models import User
+from app.domain.boards.models import Board
 
 from app.config import settings
 
