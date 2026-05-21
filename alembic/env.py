@@ -7,7 +7,7 @@ from alembic import context
 
 from app.database.base import Base  # noqa: F401
 from app.domain.users.models import User
-from app.domain.boards.models import Board
+from app.domain.boards.models import Board, BoardMember
 from app.domain.lists.models import List
 from app.domain.cards.models import Card, CardHistory
 

@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel, Field
+from app.domain.boards.models import BoardRole
 
 
 class BoardCreate(BaseModel):
@@ -21,4 +22,20 @@ class BoardResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
+class BoardMemberCreate(BaseModel):
+    user_id: uuid.UUID
+    role: BoardRole = BoardRole.MEMBER
+
+
+class BoardMemberUpdate(BaseModel):
+    role: BoardRole
+
+
+class BoardMemberResponse(BaseModel):
+    id: uuid.UUID
+    board_id: uuid.UUID
+    user_id: uuid.UUID
+    role: BoardRole
+    added_at: datetime
+
+model_config = {"from_attributes": True}
