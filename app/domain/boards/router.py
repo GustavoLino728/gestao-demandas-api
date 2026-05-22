@@ -1,5 +1,6 @@
+from typing import Literal
 import uuid
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.dependencies import DBSession, CurrentUserContext
 from app.domain.boards.member_repository import BoardMemberRepository
@@ -14,7 +15,6 @@ from app.domain.boards.schemas import (
     BoardMemberUpdate,
     BoardMemberResponse,
 )
-
 
 router = APIRouter(prefix="/boards", tags=["Boards"])
 
@@ -40,13 +40,14 @@ async def create_board(
     return await service.create_board(data, user_id)
 
 
-@router.get("/me", response_model=list[BoardResponse])
-async def list_my_boards(
+@router.get("/", response_model=list[BoardResponse])
+async def list_boards(
     ctx: CurrentUserContext,
+    scope: Literal["mine", "all"] = Query("mine"),
     service: BoardService = Depends(get_board_service),
 ):
-    user_id, _ = ctx
-    return await service.list_my_boards(user_id)
+    user_id, role = ctx
+    return await service.list_boards(user_id=user_id, role=role, scope=scope)
 
 
 @router.get("/{board_id}", response_model=BoardResponse)
@@ -55,7 +56,8 @@ async def get_board(
     ctx: CurrentUserContext,
     service: BoardService = Depends(get_board_service),
 ):
-    return await service.get_board(board_id)
+    user_id, role = ctx
+    return await service.get_board(board_id, user_id, role)
 
 
 @router.patch("/{board_id}", response_model=BoardResponse)
