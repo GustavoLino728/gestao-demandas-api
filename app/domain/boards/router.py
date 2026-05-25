@@ -15,12 +15,16 @@ from app.domain.boards.schemas import (
     BoardMemberUpdate,
     BoardMemberResponse,
 )
+from app.domain.lists.repository import ListRepository
 
 router = APIRouter(prefix="/boards", tags=["Boards"])
 
 
 def get_board_service(db: DBSession) -> BoardService:
-    return BoardService(BoardRepository(db))
+    return BoardService(
+        repo=BoardRepository(db),
+        list_repo=ListRepository(db),
+    )
 
 
 def get_board_member_service(db: DBSession) -> BoardMemberService:

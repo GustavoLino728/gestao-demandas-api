@@ -1,18 +1,37 @@
 import uuid
+
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.domain.users.models import UserRole
 from app.domain.boards.models import Board
 from app.domain.boards.repository import BoardRepository
 from app.domain.boards.schemas import BoardCreate, BoardUpdate
+from app.domain.lists.models import List
+from app.domain.lists.repository import ListRepository
+
+
+DEFAULT_LISTS = [
+    ("Backlog", 0),
+    ("Em andamento", 1),
+    ("Finalizado", 2),
+]
 
 
 class BoardService:
-    def __init__(self, repo: BoardRepository):
+    def __init__(self, repo: BoardRepository, list_repo: ListRepository):
         self.repo = repo
+        self.list_repo = list_repo
 
     async def create_board(self, data: BoardCreate, owner_id: uuid.UUID) -> Board:
         board = Board(**data.model_dump(), owner_id=owner_id)
-        return await self.repo.create(board)
+        board = await self.repo.create(board)
+
+        default_lists = [
+            List(name=name, position=position, board_id=board.id)
+            for name, position in DEFAULT_LISTS
+        ]
+        await self.list_repo.create_many(default_lists)
+
+        return board
 
     async def list_boards(
         self,
@@ -64,6 +83,7 @@ class BoardService:
             setattr(board, field, value)
 
         await self.repo.session.flush()
+        await self.repo.session.refresh(board)
         return board
 
     async def delete_board(
@@ -80,4 +100,3 @@ class BoardService:
             raise ForbiddenError("Apenas o dono do board, gestores ou admins podem deletar.")
 
         await self.repo.delete(board)
-        await self.repo.session.flush()
